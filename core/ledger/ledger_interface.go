@@ -132,6 +132,7 @@ type HistoryDBConfig struct {
 type SnapshotsConfig struct {
 	// RootDir is the top-level directory for the snapshots.
 	RootDir string
+	HashAlgorithm string
 }
 
 // PeerLedgerProvider provides handle to ledger instances

@@ -28,6 +28,8 @@ import (
 	"github.com/hyperledger/fabric/core/ledger/pvtdatapolicy"
 	"github.com/hyperledger/fabric/internal/fileutil"
 	"github.com/pkg/errors"
+
+	"github.com/hyperledger/fabric-lib-go/bccsp"
 )
 
 const (
@@ -107,7 +109,17 @@ func (l *kvLedger) generateSnapshot() error {
 	defer os.RemoveAll(snapshotTempDir)
 
 	newHashFunc := func() (hash.Hash, error) {
-		return l.hashProvider.GetHash(snapshotHashOpts)
+		switch l.snapshotHashAlgorithm {
+		case "ParallelHash256":
+			// Instantiate our new adapter
+			// For now, we use a default block size of 1MB. This could be made configurable in core.yaml.
+			return &ParallelHashAdapter{L: 512, B: 1024 * 1024, S: "FabricSnapshot"}, nil
+		case "SHA256":
+			fallthrough
+		default:
+			// The old behavior, but now explicitly using SHA256Opts
+			return l.hashProvider.GetHash(&bccsp.SHA256Opts{})
+		}
 	}
 
 	txIDsExportSummary, err := l.blockStore.ExportTxIds(snapshotTempDir, newHashFunc)
@@ -196,16 +208,24 @@ func (l *kvLedger) generateSnapshotMetadataFiles(
 	}
 
 	// generate metadata hash file
-	hash, err := l.hashProvider.GetHash(snapshotHashOpts)
-	if err != nil {
-		return err
+	var h hash.Hash
+	switch l.snapshotHashAlgorithm {
+	case "ParallelHash256":
+		h = &ParallelHashAdapter{L: 512, B: 1024 * 1024, S: "FabricSnapshotMetadata"}
+	case "SHA256":
+		fallthrough
+	default:
+		h, err = l.hashProvider.GetHash(&bccsp.SHA256Opts{})
+		if err != nil {
+			return err
+		}
 	}
-	if _, err := hash.Write(signableMetadataBytes); err != nil {
+	if _, err := h.Write(signableMetadataBytes); err != nil {
 		return err
 	}
 
 	additionalMetadata := &snapshotAdditionalMetadata{
-		SnapshotHashInHex:        hex.EncodeToString(hash.Sum(nil)),
+		SnapshotHashInHex:        hex.EncodeToString(h.Sum(nil)),
 		LastBlockCommitHashInHex: hex.EncodeToString(l.commitHash),
 	}
 
@@ -230,7 +250,7 @@ func (p *Provider) CreateFromSnapshot(snapshotDir string) (ledger.PeerLedger, st
 		return nil, "", errors.WithMessagef(err, "error while unmarshalling metadata")
 	}
 
-	if err := verifySnapshot(snapshotDir, metadata, p.initializer.HashProvider); err != nil {
+	if err := verifySnapshot(snapshotDir, metadata, p.initializer.HashProvider, p.initializer.Config.SnapshotsConfig.HashAlgorithm); err != nil {
 		return nil, "", errors.WithMessagef(err, "error while verifying snapshot")
 	}
 
@@ -365,30 +385,47 @@ func loadSnapshotMetadataJSONs(snapshotDir string) (*SnapshotMetadataJSONs, erro
 	}, nil
 }
 
-func verifySnapshot(snapshotDir string, snapshotMetadata *SnapshotMetadata, hashProvider ledger.HashProvider) error {
+func verifySnapshot(snapshotDir string, snapshotMetadata *SnapshotMetadata, hashProvider ledger.HashProvider, hashAlgorithm string) error {
 	if err := verifyFileHash(
 		snapshotDir,
 		SnapshotSignableMetadataFileName,
 		snapshotMetadata.SnapshotHashInHex,
 		hashProvider,
+		hashAlgorithm,
 	); err != nil {
 		return err
 	}
 
 	filesAndHashes := snapshotMetadata.FilesAndHashes
 	for f, h := range filesAndHashes {
-		if err := verifyFileHash(snapshotDir, f, h, hashProvider); err != nil {
+		if err := verifyFileHash(snapshotDir, f, h, hashProvider, hashAlgorithm); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func verifyFileHash(dir, file string, expectedHashInHex string, hashProvider ledger.HashProvider) error {
-	hashImpl, err := hashProvider.GetHash(snapshotHashOpts)
-	if err != nil {
-		return err
-	}
+func verifyFileHash(dir, file, expectedHashInHex string, hashProvider ledger.HashProvider, hashAlgorithm string) error {
+    var hashImpl hash.Hash
+    var err error
+    switch hashAlgorithm {
+    case "ParallelHash256":
+        // Use a customization string that matches what was used during generation for this file type
+        var S string
+        if file == SnapshotSignableMetadataFileName {
+            S = "FabricSnapshotMetadata"
+        } else {
+            S = "FabricSnapshot"
+        }
+        hashImpl = &ParallelHashAdapter{L: 512, B: 1024 * 1024, S: S}
+    case "SHA256":
+        fallthrough
+    default:
+        hashImpl, err = hashProvider.GetHash(&bccsp.SHA256Opts{})
+        if err != nil {
+            return err
+        }
+    }
 
 	filePath := filepath.Join(dir, file)
 	f, err := os.Open(filePath)

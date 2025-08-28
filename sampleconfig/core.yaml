@@ -761,6 +761,10 @@ ledger:
     # The path must be an absolute path.
     rootDir: /var/hyperledger/production/snapshots
 
+    # The hash algorithm to use for generating and verifying snapshot integrity.
+    # Supported values: "SHA256", "ParallelHash256"
+    hashAlgorithm: "ParallelHash256"
+
 ###############################################################################
 #
 #    Operations section

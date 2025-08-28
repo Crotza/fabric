@@ -1,6 +1,6 @@
 module github.com/hyperledger/fabric
 
-go 1.25.0
+go 1.24.4
 
 require (
 	code.cloudfoundry.org/clock v1.15.0
@@ -41,6 +41,8 @@ require (
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+require go-parallelhash v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
@@ -121,3 +123,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
+
+replace go-parallelhash => /home/joaop/tcc/go-parallelhash

@@ -43,7 +43,7 @@ var logger = flogging.MustGetLogger("kvledger")
 
 var (
 	rwsetHashOpts    = &bccsp.SHA256Opts{}
-	snapshotHashOpts = &bccsp.SHA256Opts{}
+	//snapshotHashOpts = &bccsp.SHA256Opts{}
 )
 
 // kvLedger provides an implementation of `ledger.PeerLedger`.
@@ -77,6 +77,8 @@ type kvLedger struct {
 
 	commitNotifierLock sync.Mutex
 	commitNotifier     *commitNotifier
+
+	snapshotHashAlgorithm string
 }
 
 type lgrInitializer struct {
@@ -110,6 +112,17 @@ func newKVLedger(initializer *lgrInitializer) (*kvLedger, error) {
 		hashProvider:         initializer.hashProvider,
 		config:               initializer.config,
 		blockAPIsRWLock:      &sync.RWMutex{},
+	}
+
+	// Read the configured snapshot hash algorithm from core.yaml
+	hashAlgo := initializer.config.SnapshotsConfig.HashAlgorithm
+	switch hashAlgo {
+	case "ParallelHash256", "SHA256":
+		l.snapshotHashAlgorithm = hashAlgo
+		logger.Infof("Ledger [%s] configured to use '%s' for snapshots.", ledgerID, hashAlgo)
+	default:
+		l.snapshotHashAlgorithm = "SHA256"
+		logger.Warningf("Snapshot hash algorithm not specified or unrecognized: '%s'. Defaulting to SHA256.", hashAlgo)
 	}
 
 	btlPolicy := pvtdatapolicy.ConstructBTLPolicy(&collectionInfoRetriever{ledgerID, l, initializer.ccInfoProvider})

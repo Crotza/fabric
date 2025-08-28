@@ -510,6 +510,9 @@ github.com/syndtr/goleveldb/leveldb/util
 github.com/tedsuo/ifrit
 github.com/tedsuo/ifrit/ginkgomon_v2
 github.com/tedsuo/ifrit/grouper
+# go-parallelhash v0.0.0-00010101000000-000000000000 => /home/joaop/tcc/go-parallelhash
+## explicit; go 1.23.0
+go-parallelhash/hash
 # go.etcd.io/etcd/client/pkg/v3 v3.5.16
 ## explicit; go 1.22
 go.etcd.io/etcd/client/pkg/v3/fileutil
@@ -717,3 +720,4 @@ gopkg.in/yaml.v3
 ## explicit; go 1.17
 rsc.io/tmplfunc
 rsc.io/tmplfunc/internal/parse
+# go-parallelhash => /home/joaop/tcc/go-parallelhash

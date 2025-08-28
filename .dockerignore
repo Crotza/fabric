@@ -10,7 +10,14 @@
 
 # These are directories created by the make process
 bin
-build
+# Exclude the contents of the build directory, but not the directory itself
+build/*
+# Now, make an exception so Docker can look inside the bin subdirectory
+!build/bin
+# Exclude the contents of the bin subdirectory
+build/bin/*
+# Finally, make the exception for our specific peer binary
+!build/bin/peer
 release
 
 ci
