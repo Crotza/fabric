@@ -124,4 +124,4 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-replace go-parallelhash => /home/joaop/tcc/go-parallelhash
+replace go-parallelhash => /home/jpcrozariolo/tcc/go-parallelhash

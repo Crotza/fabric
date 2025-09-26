@@ -112,8 +112,7 @@ func (l *kvLedger) generateSnapshot() error {
 		switch l.snapshotHashAlgorithm {
 		case "ParallelHash256":
 			// Instantiate our new adapter
-			// For now, we use a default block size of 1MB. This could be made configurable in core.yaml.
-			return &ParallelHashAdapter{L: 512, B: 1024 * 1024, S: "FabricSnapshot"}, nil
+			return &ParallelHashAdapter{L: 512, S: "FabricSnapshot"}, nil
 		case "SHA256":
 			fallthrough
 		default:
@@ -211,7 +210,7 @@ func (l *kvLedger) generateSnapshotMetadataFiles(
 	var h hash.Hash
 	switch l.snapshotHashAlgorithm {
 	case "ParallelHash256":
-		h = &ParallelHashAdapter{L: 512, B: 1024 * 1024, S: "FabricSnapshotMetadata"}
+		h = &ParallelHashAdapter{L: 512, S: "FabricSnapshotMetadata"}
 	case "SHA256":
 		fallthrough
 	default:
@@ -417,7 +416,7 @@ func verifyFileHash(dir, file, expectedHashInHex string, hashProvider ledger.Has
         } else {
             S = "FabricSnapshot"
         }
-        hashImpl = &ParallelHashAdapter{L: 512, B: 1024 * 1024, S: S}
+        hashImpl = &ParallelHashAdapter{L: 512, S: S}
     case "SHA256":
         fallthrough
     default:
